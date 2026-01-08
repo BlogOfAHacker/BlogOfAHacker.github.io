@@ -83,6 +83,13 @@ function purgeHistory(commitMessage = 'Fresh start') {
 
 // Routes
 
+// Get config (exposes API keys to frontend)
+app.get('/api/config', (req, res) => {
+    res.json({
+        tinymceApiKey: process.env.TINYMCE_API_KEY || 'no-api-key'
+    });
+});
+
 // Get all files
 app.get('/api/files', (req, res) => {
     const drafts = fs.readdirSync(DRAFTS_DIR).filter(f => f.endsWith('.md')).map(file => ({

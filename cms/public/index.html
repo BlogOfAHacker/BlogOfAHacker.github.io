@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Blog CMS</title>
-    <script src="https://cdn.tiny.cloud/1/no-api-key/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
+    <!-- TinyMCE loaded dynamically with API key -->
     <script src="https://cdn.jsdelivr.net/npm/showdown@2.1.0/dist/showdown.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/turndown@7.1.2/dist/turndown.min.js"></script>
     <style>
@@ -361,24 +361,45 @@
         const showdownConverter = new showdown.Converter({ tables: true, strikethrough: true });
         const turndownService = new TurndownService({ headingStyle: 'atx', codeBlockStyle: 'fenced' });
 
-        tinymce.init({
-            selector: '#editor',
-            height: '100%',
-            menubar: true,
-            plugins: [
-                'advlist', 'autolink', 'lists', 'link', 'image', 'charmap', 'preview',
-                'anchor', 'searchreplace', 'visualblocks', 'code', 'fullscreen',
-                'insertdatetime', 'media', 'table', 'help', 'wordcount', 'codesample'
-            ],
-            toolbar: 'undo redo | styles | bold italic underline strikethrough | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | link image codesample | removeformat | help',
-            contextmenu: 'bold italic underline | link | bullist numlist | removeformat',
-            content_style: 'body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-size: 16px; line-height: 1.6; padding: 20px; }',
-            skin: 'oxide',
-            promotion: false,
-            branding: false
-        });
-
         let currentFile = null;
+
+        // Initialize app - load config then TinyMCE
+        async function initApp() {
+            // Get API key from server
+            const configRes = await fetch('/api/config');
+            const config = await configRes.json();
+
+            // Dynamically load TinyMCE with the API key
+            const script = document.createElement('script');
+            script.src = `https://cdn.tiny.cloud/1/${config.tinymceApiKey}/tinymce/6/tinymce.min.js`;
+            script.referrerPolicy = 'origin';
+            script.onload = () => {
+                // Initialize TinyMCE after script loads
+                tinymce.init({
+                    selector: '#editor',
+                    height: '100%',
+                    menubar: true,
+                    plugins: [
+                        'advlist', 'autolink', 'lists', 'link', 'image', 'charmap', 'preview',
+                        'anchor', 'searchreplace', 'visualblocks', 'code', 'fullscreen',
+                        'insertdatetime', 'media', 'table', 'help', 'wordcount', 'codesample'
+                    ],
+                    toolbar: 'undo redo | styles | bold italic underline strikethrough | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | link image codesample | removeformat | help',
+                    contextmenu: 'bold italic underline | link | bullist numlist | removeformat',
+                    content_style: 'body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-size: 16px; line-height: 1.6; padding: 20px; }',
+                    skin: 'oxide',
+                    promotion: false,
+                    branding: false
+                });
+
+                // Load files after TinyMCE is ready
+                loadFiles();
+            };
+            document.head.appendChild(script);
+        }
+
+        // Start the app
+        initApp();
 
         function setStatus(text) {
             document.getElementById('status').textContent = text;
@@ -598,8 +619,6 @@ date: ${date}
                 showToast('Error purging history', 'error');
             }
         }
-
-        loadFiles();
     </script>
 </body>
 
