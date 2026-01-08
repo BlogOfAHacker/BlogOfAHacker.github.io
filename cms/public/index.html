@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blog CMS</title>
+    <script src="https://cdn.tiny.cloud/1/no-api-key/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
+    <script src="https://cdn.jsdelivr.net/npm/showdown@2.1.0/dist/showdown.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/turndown@7.1.2/dist/turndown.min.js"></script>
+    <style>
+        :root {
+            --bg-dark: #1a1a2e;
+            --bg-sidebar: #16213e;
+            --bg-card: #0f3460;
+            --accent: #e94560;
+            --text: #eaeaea;
+            --text-muted: #a0a0a0;
+            --danger: #dc3545;
+            --warning: #ffc107;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            height: 100vh;
+            margin: 0;
+            background: var(--bg-dark);
+            color: var(--text);
+        }
+
+        #sidebar {
+            width: 300px;
+            background: var(--bg-sidebar);
+            border-right: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin-bottom: 20px;
+            color: var(--accent);
+        }
+
+        h2 {
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-muted);
+            margin: 20px 0 10px;
+        }
+
+        ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .file-item {
+            padding: 10px 12px;
+            border-radius: 8px;
+            margin-bottom: 5px;
+            color: var(--text);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.2s ease;
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        .file-item:hover {
+            background: rgba(233, 69, 96, 0.1);
+        }
+
+        .file-item.active {
+            background: var(--accent);
+            color: white;
+        }
+
+        .file-info {
+            flex: 1;
+            cursor: pointer;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .file-actions {
+            display: flex;
+            gap: 5px;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        .file-item:hover .file-actions {
+            opacity: 1;
+        }
+
+        .icon-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 4px 6px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            transition: background 0.2s;
+        }
+
+        .icon-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .icon-btn.delete:hover {
+            background: var(--danger);
+        }
+
+        .icon-btn.unpublish:hover {
+            background: var(--warning);
+            color: #000;
+        }
+
+        .badge {
+            font-size: 0.65rem;
+            padding: 2px 6px;
+            border-radius: 10px;
+            text-transform: uppercase;
+            font-weight: bold;
+            margin-left: 8px;
+        }
+
+        .badge-draft {
+            background: #ffc107;
+            color: #000;
+        }
+
+        .badge-post {
+            background: #28a745;
+            color: #fff;
+        }
+
+        button#new-btn {
+            width: 100%;
+            padding: 14px;
+            background: var(--accent);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: bold;
+            transition: transform 0.1s, box-shadow 0.2s;
+        }
+
+        button#new-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(233, 69, 96, 0.4);
+        }
+
+        button#fresh-start-btn {
+            width: 100%;
+            padding: 10px;
+            background: transparent;
+            color: var(--danger);
+            border: 1px solid var(--danger);
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            margin-top: 15px;
+            transition: all 0.2s;
+        }
+
+        button#fresh-start-btn:hover {
+            background: var(--danger);
+            color: white;
+        }
+
+        #main {
+            flex: 1;
+            padding: 25px;
+            display: flex;
+            flex-direction: column;
+            background: var(--bg-dark);
+        }
+
+        #toolbar {
+            margin-bottom: 15px;
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        input#title {
+            padding: 12px 15px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            flex: 1;
+            min-width: 200px;
+            font-size: 1.1rem;
+            background: var(--bg-sidebar);
+            color: var(--text);
+        }
+
+        input#title:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        .btn {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: bold;
+            transition: transform 0.1s, box-shadow 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-save {
+            background: #28a745;
+            color: white;
+        }
+
+        .btn-save:hover {
+            box-shadow: 0 4px 15px rgba(40, 167, 69, 0.4);
+        }
+
+        .btn-publish {
+            background: #6f42c1;
+            color: white;
+        }
+
+        .btn-publish:hover {
+            box-shadow: 0 4px 15px rgba(111, 66, 193, 0.4);
+        }
+
+        #editor-container {
+            flex: 1;
+            background: #fff;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .tox-tinymce {
+            border: none !important;
+            border-radius: 8px !important;
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 15px 25px;
+            border-radius: 8px;
+            color: white;
+            font-weight: bold;
+            animation: slideIn 0.3s ease;
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .toast-success {
+            background: #28a745;
+        }
+
+        .toast-info {
+            background: #17a2b8;
+        }
+
+        .toast-error {
+            background: #dc3545;
+        }
+
+        .toast .spinner {
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* Status indicator */
+        .status-bar {
+            padding: 8px 15px;
+            background: var(--bg-sidebar);
+            border-radius: 8px;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-top: auto;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="sidebar">
+        <div class="logo">✍️ Blog Writer</div>
+        <button id="new-btn">+ New Draft</button>
+        <h2>📝 Drafts</h2>
+        <ul id="drafts-list"></ul>
+        <h2>🌐 Published</h2>
+        <ul id="posts-list"></ul>
+        <button id="fresh-start-btn" onclick="freshStart()">🔄 Fresh Start</button>
+        <div class="status-bar" id="status">Ready</div>
+    </div>
+
+    <div id="main">
+        <div id="toolbar">
+            <input type="text" id="title" placeholder="Post Title...">
+            <button class="btn btn-save" onclick="saveFile()" id="save-btn">💾 Save Draft</button>
+            <button class="btn btn-publish" onclick="publishFile()" id="publish-btn">🚀 Publish</button>
+        </div>
+        <div id="editor-container">
+            <textarea id="editor"></textarea>
+        </div>
+    </div>
+
+    <script>
+        const showdownConverter = new showdown.Converter({ tables: true, strikethrough: true });
+        const turndownService = new TurndownService({ headingStyle: 'atx', codeBlockStyle: 'fenced' });
+
+        tinymce.init({
+            selector: '#editor',
+            height: '100%',
+            menubar: true,
+            plugins: [
+                'advlist', 'autolink', 'lists', 'link', 'image', 'charmap', 'preview',
+                'anchor', 'searchreplace', 'visualblocks', 'code', 'fullscreen',
+                'insertdatetime', 'media', 'table', 'help', 'wordcount', 'codesample'
+            ],
+            toolbar: 'undo redo | styles | bold italic underline strikethrough | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | link image codesample | removeformat | help',
+            contextmenu: 'bold italic underline | link | bullist numlist | removeformat',
+            content_style: 'body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-size: 16px; line-height: 1.6; padding: 20px; }',
+            skin: 'oxide',
+            promotion: false,
+            branding: false
+        });
+
+        let currentFile = null;
+
+        function setStatus(text) {
+            document.getElementById('status').textContent = text;
+        }
+
+        function showToast(message, type = 'success', duration = 3000) {
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${type}`;
+            if (type === 'info') {
+                toast.innerHTML = `<div class="spinner"></div> ${message}`;
+            } else {
+                toast.textContent = message;
+            }
+            document.body.appendChild(toast);
+            if (duration > 0) {
+                setTimeout(() => toast.remove(), duration);
+            }
+            return toast;
+        }
+
+        async function loadFiles() {
+            const res = await fetch('/api/files');
+            const files = await res.json();
+
+            const draftsList = document.getElementById('drafts-list');
+            const postsList = document.getElementById('posts-list');
+            draftsList.innerHTML = '';
+            postsList.innerHTML = '';
+
+            files.forEach(file => {
+                const li = document.createElement('li');
+                li.className = 'file-item';
+                const displayName = file.name.replace(/^\d{4}-\d{2}-\d{2}-/, '').replace('.md', '');
+
+                li.innerHTML = `
+                    <div class="file-info" onclick="openFile(${JSON.stringify(file).replace(/"/g, '&quot;')})">
+                        ${displayName}
+                        <span class="badge badge-${file.type}">${file.type}</span>
+                    </div>
+                    <div class="file-actions">
+                        ${file.type === 'post' ? `<button class="icon-btn unpublish" title="Move to drafts" onclick="unpublishFile('${file.name}')">⬇️</button>` : ''}
+                        <button class="icon-btn delete" title="Delete" onclick="deleteFile('${file.path.replace(/\\/g, '\\\\')}', '${file.type}')">🗑️</button>
+                    </div>
+                `;
+
+                if (file.type === 'draft') {
+                    draftsList.appendChild(li);
+                } else {
+                    postsList.appendChild(li);
+                }
+            });
+        }
+
+        async function openFile(file) {
+            const res = await fetch(`/api/file?path=${encodeURIComponent(file.path)}`);
+            const data = await res.json();
+
+            const parts = data.content.split('---');
+            let frontMatter = '';
+            let markdownContent = data.content;
+
+            if (parts.length >= 3) {
+                frontMatter = '---' + parts[1] + '---\n';
+                markdownContent = parts.slice(2).join('---').trim();
+
+                const titleMatch = parts[1].match(/title:\s*["']?([^"'\n]+)["']?/);
+                if (titleMatch) {
+                    document.getElementById('title').value = titleMatch[1];
+                }
+            }
+
+            const html = showdownConverter.makeHtml(markdownContent);
+            tinymce.get('editor').setContent(html);
+
+            currentFile = { ...file, frontMatter };
+            setStatus(`Editing: ${file.name}`);
+        }
+
+        document.getElementById('new-btn').onclick = () => {
+            document.getElementById('title').value = '';
+            tinymce.get('editor').setContent('<p>Start writing your amazing blog post here...</p>');
+            currentFile = null;
+            setStatus('New draft');
+            showToast('New draft created!', 'info', 2000);
+        };
+
+        function generateFrontMatter(title) {
+            const date = new Date().toISOString().split('T')[0];
+            return `---
+layout: post
+title: "${title}"
+date: ${date}
+---
+
+`;
+        }
+
+        async function saveFile() {
+            const title = document.getElementById('title').value || 'untitled';
+            const html = tinymce.get('editor').getContent();
+            const markdown = turndownService.turndown(html);
+            const frontMatter = currentFile?.frontMatter || generateFrontMatter(title);
+            const fullContent = frontMatter + markdown;
+            const filename = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '') + '.md';
+
+            const res = await fetch('/api/save', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ filename, content: fullContent, type: 'draft' })
+            });
+
+            if (res.ok) {
+                showToast('Draft saved!');
+                setStatus('Saved');
+                loadFiles();
+            }
+        }
+
+        async function publishFile() {
+            if (!confirm("Ready to publish? This will push to GitHub.")) return;
+
+            const title = document.getElementById('title').value || 'untitled';
+            const html = tinymce.get('editor').getContent();
+            const markdown = turndownService.turndown(html);
+            const frontMatter = generateFrontMatter(title);
+            const fullContent = frontMatter + markdown;
+            const filename = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '') + '.md';
+
+            const toast = showToast('Publishing and pushing to GitHub...', 'info', 0);
+            setStatus('Publishing...');
+
+            const res = await fetch('/api/publish', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ filename, content: fullContent })
+            });
+
+            toast.remove();
+
+            if (res.ok) {
+                showToast('🚀 Published and pushed to GitHub!');
+                setStatus('Published');
+                loadFiles();
+            } else {
+                showToast('Error publishing', 'error');
+            }
+        }
+
+        async function unpublishFile(filename) {
+            if (!confirm("Move this post back to drafts? It will be removed from GitHub.")) return;
+
+            const toast = showToast('Moving to drafts and pushing...', 'info', 0);
+            setStatus('Unpublishing...');
+
+            const res = await fetch('/api/unpublish', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ filename })
+            });
+
+            toast.remove();
+
+            if (res.ok) {
+                showToast('Moved to drafts!');
+                setStatus('Ready');
+                loadFiles();
+            } else {
+                showToast('Error unpublishing', 'error');
+            }
+        }
+
+        async function deleteFile(filepath, type) {
+            const action = type === 'post' ? 'This will also remove it from GitHub.' : 'This draft will be deleted locally.';
+            if (!confirm(`Delete this ${type}? ${action}`)) return;
+
+            const toast = showToast('Deleting...', 'info', 0);
+            setStatus('Deleting...');
+
+            const res = await fetch('/api/delete', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ filepath, type })
+            });
+
+            toast.remove();
+
+            if (res.ok) {
+                showToast('Deleted!');
+                setStatus('Ready');
+                currentFile = null;
+                document.getElementById('title').value = '';
+                tinymce.get('editor').setContent('');
+                loadFiles();
+            } else {
+                showToast('Error deleting', 'error');
+            }
+        }
+
+        async function freshStart() {
+            if (!confirm("⚠️ WARNING: This will erase ALL git history!\n\nThis is irreversible. Only your current files will remain.\n\nAre you sure?")) return;
+            if (!confirm("Final confirmation: Purge all history?")) return;
+
+            const toast = showToast('Purging history and force pushing...', 'info', 0);
+            setStatus('Purging history...');
+
+            const res = await fetch('/api/fresh-start', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            });
+
+            toast.remove();
+
+            if (res.ok) {
+                showToast('🔄 History purged! Fresh start complete.');
+                setStatus('Ready');
+            } else {
+                showToast('Error purging history', 'error');
+            }
+        }
+
+        loadFiles();
+    </script>
+</body>
+
+</html>
