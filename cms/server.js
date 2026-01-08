@@ -47,9 +47,11 @@ function configureGit() {
 // Helper: Standard commit and push
 function gitCommitAndPush(message) {
     configureGit();
+    const branchResult = runGit('git rev-parse --abbrev-ref HEAD');
+    const branch = branchResult.success ? branchResult.output.trim() : 'main';
     runGit('git add -A');
     runGit(`git commit -m "${message}"`, true);
-    return runGit('git push');
+    return runGit(`git push -u origin ${branch}`);
 }
 
 // Helper: Purge history - squash everything into one commit
